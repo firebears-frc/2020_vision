@@ -239,12 +239,11 @@ public final class Main {
     }
 
     // start image processing on camera 0 if present
+    GripPipeline gripPipeline = new GripPipeline();
+    GripListener gripListener = new GripListener(ntinst);
     if (cameras.size() >= 1) {
-      VisionThread visionThread = new VisionThread(cameras.get(0),
-              new GripPipeline(), pipeline -> {
-        // do something with pipeline results
-      });
-
+      VideoSource camera = cameras.get(0);
+      VisionThread visionThread = new VisionThread(camera, gripPipeline, gripListener);
       visionThread.start();
     }
 
