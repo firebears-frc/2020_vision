@@ -1,7 +1,7 @@
 import edu.wpi.first.vision.*;
 import edu.wpi.cscore.CvSource;
 import edu.wpi.first.networktables.*;
-
+import java.util.ArrayList;
 import java.util.Random;
 
 import org.opencv.core.*;
@@ -51,36 +51,42 @@ public class GripListener implements VisionRunner.Listener<GripPipeline> {
         double distance = 0.0;
         double confidence = 0.0;
 
+        ArrayList<MatOfPoint> leftTargets = new ArrayList<MatOfPoint>();
+        ArrayList<MatOfPoint> rightTargets = new ArrayList<MatOfPoint>();
+
         // Mat image = pipeline.hsvThresholdOutput();
         Mat image = new Mat(pipeline.hsvThresholdOutput().rows(), pipeline.hsvThresholdOutput().cols(), CvType.CV_8UC3);
 
         for (int i = 0; i < pipeline.convexHullsOutput().size(); i++) {
             Tilt t = getHullTilt(pipeline.convexHullsOutput().get(i));
-            if(t == Tilt.Left){
-               Imgproc.drawContours(image, pipeline.convexHullsOutput(), i, new Scalar(0, 0, 255), 5); 
-            }else{
-                Imgproc.drawContours(image, pipeline.convexHullsOutput(), i, new Scalar(0, 255, 0), 5);
+            if (t == Tilt.Left) {
+                Imgproc.drawContours(image, pipeline.convexHullsOutput(), i, new Scalar(0, 0, 255), 2);
+                leftTargets.add(pipeline.convexHullsOutput().get(i));
+            } else {
+                Imgproc.drawContours(image, pipeline.convexHullsOutput(), i, new Scalar(0, 255, 0), 2);
+                rightTargets.add(pipeline.convexHullsOutput().get(i));
             }
-            
         }
 
-        if (pipeline.convexHullsOutput().size() > 0) {
-            MatOfPoint largestHull = pipeline.convexHullsOutput().get(0);
-            for (int i = 0; i < pipeline.convexHullsOutput().size(); ++i) {
-                if (Imgproc.contourArea(largestHull) < Imgproc.contourArea(pipeline.convexHullsOutput().get(i))) {
-                    largestHull = pipeline.convexHullsOutput().get(i);
+        ArrayList<TargetPair> targetPairs = new ArrayList<TargetPair>();
+        for (int i = 0; i < leftTargets.size(); i++) {
+            TargetPair pair = new TargetPair(leftTargets.get(i), rightTargets);
+            targetPairs.add(pair);
+            Imgproc.rectangle(image, pair.topLeft(), pair.bottomRight(), new Scalar(255, 20, 10), 2);
+            // Imgproc.circle(image, pairCenter, 12, new Scalar(255, 6, 6));
+        }
+
+        if (targetPairs.size() > 0) {
+            TargetPair largestPair = targetPairs.get(0);
+            for (int i = 0; i < targetPairs.size(); ++i) {
+                if (targetPairs.get(i).pairSpread() < largestPair.pairSpread()) {
+                    largestPair = targetPairs.get(i);
                 }
             }
-
-            // Finds center of largestHull
-            Point center = centerOfConvexHull(largestHull);
-
-            // Draws circle on center
-            // Imgproc.circle(image, center, 10, new Scalar(255, 0, 0), 10);
-
+            Imgproc.rectangle(image, largestPair.topLeft(), largestPair.bottomRight(), new Scalar(0, 255, 255), 2);
             // Sets angleX and angleY
-            angleX = findAngle(center.x, image.cols(), fovx);
-            angleY = findAngle(center.y, image.rows(), fovy);
+            angleX = findAngle(largestPair.findCenter().x, image.cols(), fovx);
+            angleY = findAngle(largestPair.findCenter().y, image.rows(), fovy);
         }
         // TODO : everything
 
@@ -114,6 +120,41 @@ public class GripListener implements VisionRunner.Listener<GripPipeline> {
         return out;
     }
 
+    private class TargetPair {
+        Point leftCenter;
+        Point rightCenter;
+
+        TargetPair(MatOfPoint left, ArrayList<MatOfPoint> rightMats) {
+            leftCenter = centerOfConvexHull(left);
+            Point bestFit = new Point(99999, 0);
+            for (int i = 0; i < rightMats.size(); i++) {
+                Point tmpRightCenter = centerOfConvexHull(rightMats.get(i));
+                if (tmpRightCenter.x > leftCenter.x && tmpRightCenter.x < bestFit.x) {
+                    bestFit = tmpRightCenter;
+                }
+            }
+            rightCenter = bestFit;
+        }
+
+        public Point findCenter() {
+            double averageX = (rightCenter.x + leftCenter.x) / 2;
+            double averageY = (rightCenter.y + leftCenter.y) / 2;
+            return new Point(averageX, averageY);
+        }
+
+        public Point topLeft() {
+            return new Point(leftCenter.x - 27, leftCenter.y - 37);
+        }
+
+        public Point bottomRight() {
+            return new Point(rightCenter.x + 27, rightCenter.y + 37);
+        }
+
+        public double pairSpread(){
+            return rightCenter.x -leftCenter.x;
+        }
+    }
+
     enum Tilt {
         Left, Right;
     }
@@ -121,11 +162,10 @@ public class GripListener implements VisionRunner.Listener<GripPipeline> {
     public static Tilt getHullTilt(MatOfPoint hull) {
         Mat line = new Mat();
         Imgproc.fitLine(hull, line, Imgproc.CV_DIST_L2, 0, 0.1, 0.1);
-        if (line.get(1, 0)[0] > 0.0) {
+        if (line.get(1, 0)[0] < 0.0) {
             return Tilt.Left;
         } else {
             return Tilt.Right;
         }
     }
-
 }
