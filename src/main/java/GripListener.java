@@ -51,12 +51,14 @@ public class GripListener implements VisionRunner.Listener<GripPipeline> {
         double distance = 0.0;
         double confidence = 0.0;
 
+        //ArrayLists for left and right targets
         ArrayList<MatOfPoint> leftTargets = new ArrayList<MatOfPoint>();
         ArrayList<MatOfPoint> rightTargets = new ArrayList<MatOfPoint>();
 
         // Mat image = pipeline.hsvThresholdOutput();
         Mat image = new Mat(pipeline.hsvThresholdOutput().rows(), pipeline.hsvThresholdOutput().cols(), CvType.CV_8UC3);
 
+        //draws contours in red and green, and adds convex hulls to left and right ArrayLists
         for (int i = 0; i < pipeline.convexHullsOutput().size(); i++) {
             Tilt t = getHullTilt(pipeline.convexHullsOutput().get(i));
             if (t == Tilt.Left) {
@@ -68,6 +70,7 @@ public class GripListener implements VisionRunner.Listener<GripPipeline> {
             }
         }
 
+        //draws a blue rectangle arround paired targets
         ArrayList<TargetPair> targetPairs = new ArrayList<TargetPair>();
         for (int i = 0; i < leftTargets.size(); i++) {
             TargetPair pair = new TargetPair(leftTargets.get(i), rightTargets);
@@ -76,17 +79,18 @@ public class GripListener implements VisionRunner.Listener<GripPipeline> {
             // Imgproc.circle(image, pairCenter, 12, new Scalar(255, 6, 6));
         }
 
+        //selects the "best pair" and draws a yellow rectangle
         if (targetPairs.size() > 0) {
-            TargetPair largestPair = targetPairs.get(0);
+            TargetPair bestPair = targetPairs.get(0);
             for (int i = 0; i < targetPairs.size(); ++i) {
-                if (targetPairs.get(i).pairSpread() < largestPair.pairSpread()) {
-                    largestPair = targetPairs.get(i);
+                if (targetPairs.get(i).pairSpread() < bestPair.pairSpread()) {
+                    bestPair = targetPairs.get(i);
                 }
             }
-            Imgproc.rectangle(image, largestPair.topLeft(), largestPair.bottomRight(), new Scalar(0, 255, 255), 2);
+            Imgproc.rectangle(image, bestPair.topLeft(), bestPair.bottomRight(), new Scalar(0, 255, 255), 2);
             // Sets angleX and angleY
-            angleX = findAngle(largestPair.findCenter().x, image.cols(), fovx);
-            angleY = findAngle(largestPair.findCenter().y, image.rows(), fovy);
+            angleX = findAngle(bestPair.findCenter().x, image.cols(), fovx);
+            angleY = findAngle(bestPair.findCenter().y, image.rows(), fovy);
         }
         // TODO : everything
 
@@ -124,6 +128,7 @@ public class GripListener implements VisionRunner.Listener<GripPipeline> {
         Point leftCenter;
         Point rightCenter;
 
+        //pairs right and left convex hulls
         TargetPair(MatOfPoint left, ArrayList<MatOfPoint> rightMats) {
             leftCenter = centerOfConvexHull(left);
             Point bestFit = new Point(99999, 0);
@@ -136,6 +141,7 @@ public class GripListener implements VisionRunner.Listener<GripPipeline> {
             rightCenter = bestFit;
         }
 
+        //finds the center point of a target pair
         public Point findCenter() {
             double averageX = (rightCenter.x + leftCenter.x) / 2;
             double averageY = (rightCenter.y + leftCenter.y) / 2;
