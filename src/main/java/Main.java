@@ -1,3 +1,4 @@
+
 /*----------------------------------------------------------------------------*/
 /* Copyright (c) 2018 FIRST. All Rights Reserved.                             */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
@@ -18,6 +19,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import edu.wpi.cscore.CvSource;
 import edu.wpi.cscore.MjpegServer;
 import edu.wpi.cscore.UsbCamera;
 import edu.wpi.cscore.VideoSource;
@@ -234,15 +236,22 @@ public final class Main {
 
     // start cameras
     List<VideoSource> cameras = new ArrayList<>();
+
     for (CameraConfig cameraConfig : cameraConfigs) {
       cameras.add(startCamera(cameraConfig));
     }
 
+
+
     // start image processing on the camera for vision targets, if present
     VideoSource targetCamera = cameras.size() > 0 ? cameras.get(0) : null;
+
+    CvSource targetStream = CameraServer.getInstance().putVideo("targetStream", 640, 360);
+
+
     if (targetCamera != null) {
       GripPipeline gripPipeline = new GripPipeline();
-      GripListener gripListener = new GripListener(ntinst);
+      GripListener gripListener = new GripListener(ntinst, targetStream);
       VisionThread visionThread = new VisionThread(targetCamera, gripPipeline, gripListener);
       visionThread.start();
     }
