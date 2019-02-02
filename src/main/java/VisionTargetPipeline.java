@@ -41,8 +41,8 @@ public class VisionTargetPipeline implements VisionPipeline {
 	@Override	public void process(Mat source0) {
 		// Step HSV_Threshold0:
 		Mat hsvThresholdInput = source0;
-		double[] hsvThresholdHue = {80.92150170648463, 90.92150170648463};
-		double[] hsvThresholdSaturation = {41.276978417266186, 74.41126279863481};
+		double[] hsvThresholdHue = {77.6978417266187, 93.99317406143345};
+		double[] hsvThresholdSaturation = {0.0, 91.81740614334471};
 		double[] hsvThresholdValue = {255.0, 255.0};
 		hsvThreshold(hsvThresholdInput, hsvThresholdHue, hsvThresholdSaturation, hsvThresholdValue, hsvThresholdOutput);
 
