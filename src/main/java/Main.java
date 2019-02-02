@@ -238,6 +238,7 @@ public final class Main {
     List<VideoSource> cameras = new ArrayList<>();
 
     for (CameraConfig cameraConfig : cameraConfigs) {
+      System.out.println(cameraConfig.name);
       cameras.add(startCamera(cameraConfig));
     }
 
@@ -250,9 +251,9 @@ public final class Main {
 
 
     if (targetCamera != null) {
-      GripPipeline gripPipeline = new GripPipeline();
-      GripListener gripListener = new GripListener(ntinst, targetStream);
-      VisionThread visionThread = new VisionThread(targetCamera, gripPipeline, gripListener);
+      VisionTargetPipeline visionTargetPipeline = new VisionTargetPipeline();
+      VisionTargetListener visionTargetListener = new VisionTargetListener(ntinst, targetStream);
+      VisionThread visionThread = new VisionThread(targetCamera, visionTargetPipeline, visionTargetListener);
       visionThread.start();
     }
 
