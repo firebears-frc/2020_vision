@@ -242,8 +242,6 @@ public final class Main {
       cameras.add(startCamera(cameraConfig));
     }
 
-
-
     // start image processing on the camera for vision targets, if present
     VideoSource targetCamera = cameras.size() > 0 ? cameras.get(0) : null;
 
