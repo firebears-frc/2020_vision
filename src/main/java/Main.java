@@ -242,17 +242,26 @@ public final class Main {
       cameras.add(startCamera(cameraConfig));
     }
 
-    // start image processing on the camera for vision targets, if present
-    VideoSource targetCamera = cameras.size() > 0 ? cameras.get(0) : null;
+    // start image processing on the cameras for vision targets, if present
+    VideoSource visionTargetCamera = cameras.size() > 0 ? cameras.get(0) : null;
+    CvSource visionTargetStream = CameraServer.getInstance().putVideo("visiontargetStream", 640, 360);
 
-    CvSource targetStream = CameraServer.getInstance().putVideo("targetStream", 640, 360);
-
-
-    if (targetCamera != null) {
+    if (visionTargetCamera != null) {
       VisionTargetPipeline visionTargetPipeline = new VisionTargetPipeline();
-      VisionTargetListener visionTargetListener = new VisionTargetListener(ntinst, targetStream);
-      VisionThread visionThread = new VisionThread(targetCamera, visionTargetPipeline, visionTargetListener);
-      visionThread.start();
+      VisionTargetListener visionTargetListener = new VisionTargetListener(ntinst, visionTargetStream);
+      VisionThread visionTargetThread = new VisionThread(visionTargetCamera, visionTargetPipeline,
+          visionTargetListener);
+      visionTargetThread.start();
+    }
+
+    VideoSource OrangeBallCamera = cameras.size() > 1 ? cameras.get(1) : null;
+    CvSource orangeBallStream = CameraServer.getInstance().putVideo("OrangeBallStream", 640, 360);
+
+    if (OrangeBallCamera != null) {
+      OrangeBallPipeline orangeBallPipeline = new OrangeBallPipeline();
+      OrangeBallListener orangeBallListener = new OrangeBallListener(ntinst, orangeBallStream);
+      VisionThread orangeBallThread = new VisionThread(OrangeBallCamera, orangeBallPipeline, orangeBallListener);
+      orangeBallThread.start();
     }
 
     // loop forever

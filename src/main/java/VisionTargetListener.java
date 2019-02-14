@@ -108,6 +108,12 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
             angleY = findAngle(bestPair.findCenter().y, image.rows(), fovy);
             bestPairWidth = bestPair.pairSpread();
             distance = referenceTargetWidth * focalLength / bestPairWidth;
+
+            if (pipeline.convexHullsOutput().size() > 0) {
+                confidence = 1;
+            } else {
+                confidence = 0;
+            }
         }
         // TODO : everything
 

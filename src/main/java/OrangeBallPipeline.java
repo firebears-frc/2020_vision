@@ -29,11 +29,8 @@ public class OrangeBallPipeline implements VisionPipeline {
 	private Mat hsvThresholdOutput = new Mat();
 	private Mat hslThresholdOutput = new Mat();
 	private Mat cvBitwiseAnd0Output = new Mat();
-	private Mat rgbThreshold0Output = new Mat();
-	private Mat rgbThreshold1Output = new Mat();
-	private Mat cvBitwiseNotOutput = new Mat();
+	private Mat rgbThresholdOutput = new Mat();
 	private Mat cvBitwiseAnd1Output = new Mat();
-	private Mat cvBitwiseAnd2Output = new Mat();
 	private ArrayList<MatOfPoint> findContoursOutput = new ArrayList<MatOfPoint>();
 	private ArrayList<MatOfPoint> filterContoursOutput = new ArrayList<MatOfPoint>();
 	private ArrayList<MatOfPoint> convexHullsOutput = new ArrayList<MatOfPoint>();
@@ -48,16 +45,16 @@ public class OrangeBallPipeline implements VisionPipeline {
 	@Override	public void process(Mat source0) {
 		// Step HSV_Threshold0:
 		Mat hsvThresholdInput = source0;
-		double[] hsvThresholdHue = {1.694915254237288, 21.176470588235297};
-		double[] hsvThresholdSaturation = {19.209039548022602, 255.0};
-		double[] hsvThresholdValue = {125.75744416991184, 255.0};
+		double[] hsvThresholdHue = {0.0, 25.933112936306514};
+		double[] hsvThresholdSaturation = {76.8361581920904, 255.0};
+		double[] hsvThresholdValue = {93.02270330106415, 255.0};
 		hsvThreshold(hsvThresholdInput, hsvThresholdHue, hsvThresholdSaturation, hsvThresholdValue, hsvThresholdOutput);
 
 		// Step HSL_Threshold0:
 		Mat hslThresholdInput = source0;
-		double[] hslThresholdHue = {5.084745762711864, 30.802139037433157};
-		double[] hslThresholdSaturation = {112.85310734463278, 255.0};
-		double[] hslThresholdLuminance = {57.6271186440678, 255.0};
+		double[] hslThresholdHue = {0.0, 19.57219251336899};
+		double[] hslThresholdSaturation = {105.47218480111114, 255.0};
+		double[] hslThresholdLuminance = {49.491682070240294, 241.36363636363637};
 		hslThreshold(hslThresholdInput, hslThresholdHue, hslThresholdSaturation, hslThresholdLuminance, hslThresholdOutput);
 
 		// Step CV_bitwise_and0:
@@ -66,35 +63,19 @@ public class OrangeBallPipeline implements VisionPipeline {
 		cvBitwiseAnd(cvBitwiseAnd0Src1, cvBitwiseAnd0Src2, cvBitwiseAnd0Output);
 
 		// Step RGB_Threshold0:
-		Mat rgbThreshold0Input = source0;
-		double[] rgbThreshold0Red = {120.05649717514125, 255.0};
-		double[] rgbThreshold0Green = {9.6045197740113, 252.72727272727272};
-		double[] rgbThreshold0Blue = {0.0, 193.63636363636365};
-		rgbThreshold(rgbThreshold0Input, rgbThreshold0Red, rgbThreshold0Green, rgbThreshold0Blue, rgbThreshold0Output);
-
-		// Step RGB_Threshold1:
-		Mat rgbThreshold1Input = source0;
-		double[] rgbThreshold1Red = {0.0, 255.0};
-		double[] rgbThreshold1Green = {0.0, 59.54545454545454};
-		double[] rgbThreshold1Blue = {7.203389830508475, 105.0};
-		rgbThreshold(rgbThreshold1Input, rgbThreshold1Red, rgbThreshold1Green, rgbThreshold1Blue, rgbThreshold1Output);
-
-		// Step CV_bitwise_not0:
-		Mat cvBitwiseNotSrc1 = rgbThreshold1Output;
-		cvBitwiseNot(cvBitwiseNotSrc1, cvBitwiseNotOutput);
+		Mat rgbThresholdInput = source0;
+		double[] rgbThresholdRed = {105.64971751412429, 255.0};
+		double[] rgbThresholdGreen = {31.214689265536723, 198.1818181818182};
+		double[] rgbThresholdBlue = {0.0, 189.0909090909091};
+		rgbThreshold(rgbThresholdInput, rgbThresholdRed, rgbThresholdGreen, rgbThresholdBlue, rgbThresholdOutput);
 
 		// Step CV_bitwise_and1:
-		Mat cvBitwiseAnd1Src1 = cvBitwiseNotOutput;
-		Mat cvBitwiseAnd1Src2 = rgbThreshold0Output;
+		Mat cvBitwiseAnd1Src1 = cvBitwiseAnd0Output;
+		Mat cvBitwiseAnd1Src2 = rgbThresholdOutput;
 		cvBitwiseAnd(cvBitwiseAnd1Src1, cvBitwiseAnd1Src2, cvBitwiseAnd1Output);
 
-		// Step CV_bitwise_and2:
-		Mat cvBitwiseAnd2Src1 = cvBitwiseAnd0Output;
-		Mat cvBitwiseAnd2Src2 = cvBitwiseAnd1Output;
-		cvBitwiseAnd(cvBitwiseAnd2Src1, cvBitwiseAnd2Src2, cvBitwiseAnd2Output);
-
 		// Step Find_Contours0:
-		Mat findContoursInput = cvBitwiseAnd2Output;
+		Mat findContoursInput = cvBitwiseAnd1Output;
 		boolean findContoursExternalOnly = true;
 		findContours(findContoursInput, findContoursExternalOnly, findContoursOutput);
 
@@ -147,24 +128,8 @@ public class OrangeBallPipeline implements VisionPipeline {
 	 * This method is a generated getter for the output of a RGB_Threshold.
 	 * @return Mat output from RGB_Threshold.
 	 */
-	public Mat rgbThreshold0Output() {
-		return rgbThreshold0Output;
-	}
-
-	/**
-	 * This method is a generated getter for the output of a RGB_Threshold.
-	 * @return Mat output from RGB_Threshold.
-	 */
-	public Mat rgbThreshold1Output() {
-		return rgbThreshold1Output;
-	}
-
-	/**
-	 * This method is a generated getter for the output of a CV_bitwise_not.
-	 * @return Mat output from CV_bitwise_not.
-	 */
-	public Mat cvBitwiseNotOutput() {
-		return cvBitwiseNotOutput;
+	public Mat rgbThresholdOutput() {
+		return rgbThresholdOutput;
 	}
 
 	/**
@@ -173,14 +138,6 @@ public class OrangeBallPipeline implements VisionPipeline {
 	 */
 	public Mat cvBitwiseAnd1Output() {
 		return cvBitwiseAnd1Output;
-	}
-
-	/**
-	 * This method is a generated getter for the output of a CV_bitwise_and.
-	 * @return Mat output from CV_bitwise_and.
-	 */
-	public Mat cvBitwiseAnd2Output() {
-		return cvBitwiseAnd2Output;
 	}
 
 	/**
@@ -253,15 +210,6 @@ public class OrangeBallPipeline implements VisionPipeline {
 		Imgproc.cvtColor(input, out, Imgproc.COLOR_BGR2RGB);
 		Core.inRange(out, new Scalar(red[0], green[0], blue[0]),
 			new Scalar(red[1], green[1], blue[1]), out);
-	}
-
-	/**
-	 * Computes the per element inverse of an image.
-	 * @param src the image to invert.
-	 * @param dst the inversion of the input image.
-	 */
-	private void cvBitwiseNot(Mat src, Mat dst) {
-		Core.bitwise_not(src, dst);
 	}
 
 	/**

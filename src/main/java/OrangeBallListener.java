@@ -26,7 +26,7 @@ public class OrangeBallListener implements VisionRunner.Listener<OrangeBallPipel
     public static final String TARGET_CONFIDENCE = "orangeBall.confidence";
 
     /** Number of vision target pairs */
-    public static final String TARGET_PAIRS = "orangeBall.pairs";
+    public static final String TARGET_OBJECTS = "orangeBall.objects";
 
     /** Processing throughput in frames per second. */
     public static final String TARGET_FPS = "orangeBall.fps";
@@ -71,24 +71,30 @@ public class OrangeBallListener implements VisionRunner.Listener<OrangeBallPipel
             Imgproc.drawContours(image, pipeline.convexHullsOutput(), i, new Scalar(0, 255, 0), 2);
         }
 
-        // selects the best target and draws a yellow outline
-        // Finds the largest hull
-        MatOfPoint largestHull = pipeline.convexHullsOutput().get(0);
-        for (int i = 0; i < pipeline.convexHullsOutput().size(); ++i) {
-            if (Imgproc.contourArea(largestHull) < Imgproc.contourArea(pipeline.convexHullsOutput().get(i))) {
-                largestHull = pipeline.convexHullsOutput().get(i);
-                Imgproc.drawContours(image, pipeline.convexHullsOutput(), i, new Scalar(0, 255, 0), 2);
+        // finds the largest hull and draws a yellow outline arround the hull
+        if (pipeline.convexHullsOutput().size() > 0) {
+            MatOfPoint largestHull = pipeline.convexHullsOutput().get(0);
+            for (int i = 1; i < pipeline.convexHullsOutput().size(); ++i) {
+                if (Imgproc.contourArea(largestHull) < Imgproc.contourArea(pipeline.convexHullsOutput().get(i))) {
+                    largestHull = pipeline.convexHullsOutput().get(i);
+                    Imgproc.drawContours(image, pipeline.convexHullsOutput(), i, new Scalar(10, 255, 255), 2);
 
+                }
+            }
+
+            // Sets angleX, angleY and the pixel width of the largest hull
+            angleX = findAngle(centerOfConvexHull(largestHull).x, image.cols(), fovx);
+            angleY = findAngle(centerOfConvexHull(largestHull).y, image.rows(), fovy);
+            largestHullwidth = Math.sqrt(Imgproc.contourArea(largestHull) / Math.PI) * 2;
+            // finds the distance of the target in inches
+            distance = referenceTargetWidth * focalLength / largestHullwidth;
+
+            if (pipeline.convexHullsOutput().size() > 0) {
+                confidence = 1;
+            } else {
+                confidence = 0;
             }
         }
-
-        // Sets angleX, angleY and the pixel width of the largest hull
-        angleX = findAngle(centerOfConvexHull(largestHull).x, image.cols(), fovx);
-        angleY = findAngle(centerOfConvexHull(largestHull).y, image.rows(), fovy);
-        largestHullwidth = Math.sqrt(Imgproc.contourArea(largestHull) / Math.PI) * 2;
-        // finds the distance of the target in inches
-        distance = referenceTargetWidth * focalLength / largestHullwidth;
-
         // TODO : everything
 
         long timeSpan = System.currentTimeMillis() - previousTime;
@@ -98,7 +104,7 @@ public class OrangeBallListener implements VisionRunner.Listener<OrangeBallPipel
         networkTable.getEntry(TARGET_ANGLE_Y).setNumber(angleY);
         networkTable.getEntry(TARGET_DISTANCE).setNumber(distance);
         networkTable.getEntry(TARGET_CONFIDENCE).setNumber(confidence);
-        networkTable.getEntry(TARGET_PAIRS).setNumber(pipeline.convexHullsOutput().size());
+        networkTable.getEntry(TARGET_OBJECTS).setNumber(pipeline.convexHullsOutput().size());
         networkTable.getEntry(TARGET_WIDTH).setNumber(largestHullwidth);
         ntinst.flush();
         targetStream.putFrame(image);
