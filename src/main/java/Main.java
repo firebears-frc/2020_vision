@@ -181,7 +181,7 @@ public final class Main {
   /**
    * Start running the camera.
    */
-  public static VideoSource startCamera(CameraConfig config) {
+  public static UsbCamera startCamera(CameraConfig config) {
     System.out.println("Starting camera '" + config.name + "' on " + config.path);
     CameraServer inst = CameraServer.getInstance();
     UsbCamera camera = new UsbCamera(config.name, config.path);
@@ -236,14 +236,23 @@ public final class Main {
 
     // start cameras
     List<VideoSource> cameras = new ArrayList<>();
+    VideoSource visionTargetCamera = null;
+    VideoSource OrangeBallCamera = null;
 
     for (CameraConfig cameraConfig : cameraConfigs) {
-      System.out.println(cameraConfig.name);
-      cameras.add(startCamera(cameraConfig));
+      UsbCamera camera = startCamera(cameraConfig);
+      cameras.add(camera);
+      if (visionTargetCamera == null) {
+        camera.setExposureManual(0);
+        visionTargetCamera = camera;
+        System.out.println("visionTargetCamera = " + cameraConfig.name);
+      } else if (OrangeBallCamera == null) {
+        OrangeBallCamera = camera;
+        System.out.println("OrangeBallCamera = " + cameraConfig.name);
+      }
     }
 
     // start image processing on the cameras for vision targets, if present
-    VideoSource visionTargetCamera = cameras.size() > 0 ? cameras.get(0) : null;
     CvSource visionTargetStream = CameraServer.getInstance().putVideo("visiontargetStream", 640, 360);
 
     if (visionTargetCamera != null) {
@@ -254,7 +263,6 @@ public final class Main {
       visionTargetThread.start();
     }
 
-    VideoSource OrangeBallCamera = cameras.size() > 1 ? cameras.get(1) : null;
     CvSource orangeBallStream = CameraServer.getInstance().putVideo("OrangeBallStream", 640, 360);
 
     if (OrangeBallCamera != null) {
