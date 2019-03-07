@@ -74,10 +74,10 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
         for (int i = 0; i < pipeline.convexHullsOutput().size(); i++) {
             Tilt t = getHullTilt(pipeline.convexHullsOutput().get(i));
             if (t == Tilt.Left) {
-                Imgproc.drawContours(image, pipeline.convexHullsOutput(), i, new Scalar(0, 0, 255), 2);
+                Imgproc.drawContours(image, pipeline.convexHullsOutput(), i, new Scalar(0, 0, 255), 3);
                 leftTargets.add(pipeline.convexHullsOutput().get(i));
             } else {
-                Imgproc.drawContours(image, pipeline.convexHullsOutput(), i, new Scalar(0, 255, 0), 2);
+                Imgproc.drawContours(image, pipeline.convexHullsOutput(), i, new Scalar(0, 255, 0), 3);
                 rightTargets.add(pipeline.convexHullsOutput().get(i));
             }
         }
@@ -88,7 +88,7 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
             TargetPair pair = new TargetPair(leftTargets.get(i), rightTargets);
             if (pair.getHasPair()) {
                 targetPairs.add(pair);
-                Imgproc.rectangle(image, pair.topLeft(), pair.bottomRight(), new Scalar(255, 20, 10), 2);
+                Imgproc.rectangle(image, pair.topLeft(), pair.bottomRight(), new Scalar(255, 20, 10), -0);
                 // Imgproc.circle(image, pairCenter, 12, new Scalar(255, 6, 6));
             }
         }

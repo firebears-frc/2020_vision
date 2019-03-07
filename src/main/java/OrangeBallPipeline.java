@@ -221,7 +221,6 @@ public class OrangeBallPipeline implements VisionPipeline {
 	private void cvBitwiseAnd(Mat src1, Mat src2, Mat dst) {
 		Core.bitwise_and(src1, src2, dst);
 	}
-
 	/**
 	 * Sets the values of pixels in a binary image to their distance to the nearest black pixel.
 	 * @param input The image on which to perform the Distance Transform.
@@ -243,8 +242,6 @@ public class OrangeBallPipeline implements VisionPipeline {
 		int method = Imgproc.CHAIN_APPROX_SIMPLE;
 		Imgproc.findContours(input, contours, hierarchy, mode, method);
 	}
-
-
 	/**
 	 * Filters out contours that do not meet certain criteria.
 	 * @param inputContours is the input list of contours
@@ -292,7 +289,6 @@ public class OrangeBallPipeline implements VisionPipeline {
 			output.add(contour);
 		}
 	}
-
 	/**
 	 * Compute the convex hulls of contours.
 	 * @param inputContours The contours on which to perform the operation.
@@ -315,9 +311,4 @@ public class OrangeBallPipeline implements VisionPipeline {
 			outputContours.add(mopHull);
 		}
 	}
-
-
-
-
 }
-
