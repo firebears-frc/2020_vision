@@ -1,12 +1,21 @@
-import edu.wpi.first.vision.*;
-import edu.wpi.cscore.CvSource;
-import edu.wpi.first.networktables.*;
+import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Random;
+import java.util.Date;
 
-import org.opencv.core.*;
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint;
+import org.opencv.core.Point;
+import org.opencv.core.Scalar;
+import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.imgproc.Moments;
+
+import edu.wpi.cscore.CvSource;
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.vision.VisionRunner;
 
 public class VisionTargetListener implements VisionRunner.Listener<VisionTargetPipeline> {
 
@@ -31,6 +40,10 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
     /** Processing throughput in frames per second. */
     public static final String TARGET_FPS = "visionTarget.fps";
 
+    /** Milliseconds between saving image files.  A negative value indicates to not save. */
+    public static final String TARGET_SAVE = "visionTarget.saveImageTime";
+
+    /** Width of the best image pair, measured in pixels. */
     public static final String TARGET_WIDTH = "visionTarget.width";
 
     private final NetworkTableInstance ntinst;
@@ -48,11 +61,15 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
 
     final double focalLength = referenceWidth * referenceDist / referenceTargetWidth;
 
+    final SimpleDateFormat imageDateFormat;
+    private long saveImageTimeout = 0;
+
     public VisionTargetListener(NetworkTableInstance nti, CvSource stream) {
         ntinst = nti;
         targetStream = stream;
         networkTable = ntinst.getTable(TABLE_NAME);
         previousTime = System.currentTimeMillis();
+        imageDateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS");
     }
 
     @Override
@@ -115,7 +132,6 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
                 confidence = 0;
             }
         }
-        // TODO : everything
 
         long timeSpan = System.currentTimeMillis() - previousTime;
         previousTime = System.currentTimeMillis();
@@ -128,6 +144,32 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
         networkTable.getEntry(TARGET_WIDTH).setNumber(bestPairWidth);
         ntinst.flush();
         targetStream.putFrame(image);
+
+        long saveImageTime = ((Number)networkTable.getEntry(TARGET_SAVE).getNumber(Double.valueOf(-1.0))).longValue();
+        if (saveImageTime <= 0) {
+            saveImageTimeout = 0;
+        } else if (System.currentTimeMillis() > saveImageTimeout)  {
+            saveImageFile(image);
+            saveImageTimeout = System.currentTimeMillis() + saveImageTime;
+        }
+    }
+
+    protected File saveImageFile(Mat image) {
+        File imageDir = findValidDirectory("/media/usb", "/media/usb0", "/media/usb1", System.getProperty("user.home"));
+        File imageFile = new File(imageDir, "visionTarget_" + imageDateFormat.format(new Date()) + ".png");
+        boolean success = Imgcodecs.imwrite(imageFile.getAbsolutePath(), image);
+        System.out.println("::: saveImageFile: " + success + " : " + imageFile.getAbsolutePath());
+        return success ? imageFile : null;
+    }
+
+    protected File findValidDirectory(String... fileNames) {
+        for (String fileName : fileNames) {
+            File file = new File(fileName);
+            if (file.isDirectory() && file.canWrite()) {
+                return file;
+            }
+        }
+        return null;
     }
 
     // Finds center of convex hull
