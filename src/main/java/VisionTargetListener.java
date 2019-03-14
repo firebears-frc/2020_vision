@@ -155,7 +155,11 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
     }
 
     protected File saveImageFile(Mat image) {
-        File imageDir = findValidDirectory("/media/usb", "/media/usb0", "/media/usb1", System.getProperty("user.home"));
+        File imageDir = findValidDirectory("/media/usb", "/media/usb0", "/media/usb1", System.getProperty("user.home"), "/tmp");
+        if (imageDir == null) {
+            System.out.println("::: saveImageFile: FAIL");
+            return null;
+        }
         File imageFile = new File(imageDir, "visionTarget_" + imageDateFormat.format(new Date()) + ".png");
         boolean success = Imgcodecs.imwrite(imageFile.getAbsolutePath(), image);
         System.out.println("::: saveImageFile: " + success + " : " + imageFile.getAbsolutePath());
