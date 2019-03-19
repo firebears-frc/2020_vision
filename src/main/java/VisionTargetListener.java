@@ -63,6 +63,7 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
 
     final SimpleDateFormat imageDateFormat;
     private long saveImageTimeout = 0;
+    private long prevSaveImageTimeout = 0;
 
     public VisionTargetListener(NetworkTableInstance nti, CvSource stream) {
         ntinst = nti;
@@ -148,29 +149,41 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
         long saveImageTime = ((Number)networkTable.getEntry(TARGET_SAVE).getNumber(Double.valueOf(-1.0))).longValue();
         if (saveImageTime <= 0) {
             saveImageTimeout = 0;
+        } else if (prevSaveImageTimeout <= 0) {
+            saveImageFile(image);
+            saveImageTimeout = System.currentTimeMillis() + saveImageTime;
         } else if (System.currentTimeMillis() > saveImageTimeout)  {
             saveImageFile(image);
             saveImageTimeout = System.currentTimeMillis() + saveImageTime;
         }
+        prevSaveImageTimeout = saveImageTime;
     }
 
+    /** Save an image matrix to a file. */
     protected File saveImageFile(Mat image) {
-        File imageDir = findValidDirectory("/media/usb", "/media/usb0", "/media/usb1", System.getProperty("user.home"), "/tmp");
-        if (imageDir == null) {
-            System.out.println("::: saveImageFile: FAIL");
+        try {
+            File imageDir = findValidDirectory("/media/usb", "/media/usb0", "/media/usb1",
+                    System.getProperty("user.home"), "/tmp");
+            if (imageDir == null) {
+                System.out.println("::: saveImageFile: FAIL");
+                return null;
+            }
+            File imageFile = new File(imageDir, "visionTarget_" + imageDateFormat.format(new Date()) + ".jpg");
+            boolean success = Imgcodecs.imwrite(imageFile.getAbsolutePath(), image);
+            System.out.println("::: saveImageFile: " + success + " : " + imageFile.getAbsolutePath());
+            return success ? imageFile : null;
+        } catch (Exception e) {
+            e.printStackTrace();
             return null;
         }
-        File imageFile = new File(imageDir, "visionTarget_" + imageDateFormat.format(new Date()) + ".png");
-        boolean success = Imgcodecs.imwrite(imageFile.getAbsolutePath(), image);
-        System.out.println("::: saveImageFile: " + success + " : " + imageFile.getAbsolutePath());
-        return success ? imageFile : null;
     }
 
-    protected File findValidDirectory(String... fileNames) {
-        for (String fileName : fileNames) {
-            File file = new File(fileName);
-            if (file.isDirectory() && file.canWrite()) {
-                return file;
+    /** Find the first directory in the list that exists and can be written to. */
+    protected File findValidDirectory(String... dirNames) {
+        for (String fileName : dirNames) {
+            File dirName = new File(fileName);
+            if (dirName.isDirectory() && dirName.canWrite()) {
+                return dirName;
             }
         }
         return null;
