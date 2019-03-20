@@ -68,7 +68,7 @@ public class OrangeBallListener implements VisionRunner.Listener<OrangeBallPipel
 
         // draws contours in green, and adds convex hulls to array list
         for (int i = 0; i < pipeline.convexHullsOutput().size(); i++) {
-            Imgproc.drawContours(image, pipeline.convexHullsOutput(), i, new Scalar(0, 255, 0), 2);
+            Imgproc.drawContours(image, pipeline.convexHullsOutput(), i, new Scalar(0, 255, 0), 1);
         }
 
         // finds the largest hull and draws a yellow outline arround the hull

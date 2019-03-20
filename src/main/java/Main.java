@@ -261,6 +261,9 @@ public final class Main {
       VisionThread visionTargetThread = new VisionThread(visionTargetCamera, visionTargetPipeline,
           visionTargetListener);
       visionTargetThread.start();
+      String cameraUrl = "http://frcvision.local:1181/?action=stream";
+      ntinst.getEntry("/CameraPublisher/VisionTarget/streams").setStringArray(new String[] { "mjpeg:" + cameraUrl });
+      System.out.println("Opening VisionTarget stream at: " + cameraUrl);
     }
 
     CvSource orangeBallStream = CameraServer.getInstance().putVideo("OrangeBallStream", 640, 360);
@@ -270,6 +273,9 @@ public final class Main {
       OrangeBallListener orangeBallListener = new OrangeBallListener(ntinst, orangeBallStream);
       VisionThread orangeBallThread = new VisionThread(OrangeBallCamera, orangeBallPipeline, orangeBallListener);
       orangeBallThread.start();
+      String cameraUrl = "http://frcvision.local:1182/?action=stream";
+      ntinst.getEntry("/CameraPublisher/OrangeBall/streams").setStringArray(new String[] { "mjpeg:" + cameraUrl });
+      System.out.println("Opening OrangeBall stream at: " + cameraUrl);
     }
 
     // loop forever

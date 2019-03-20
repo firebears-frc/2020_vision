@@ -41,9 +41,9 @@ public class VisionTargetPipeline implements VisionPipeline {
 	@Override	public void process(Mat source0) {
 		// Step HSV_Threshold0:
 		Mat hsvThresholdInput = source0;
-		double[] hsvThresholdHue = {0.0, 92.45733788395904};
-		double[] hsvThresholdSaturation = {0.0, 89.64163822525597};
-		double[] hsvThresholdValue = {255.0, 255.0};
+		double[] hsvThresholdHue = {50.0, 93.36898395721927};
+		double[] hsvThresholdSaturation = {100.0, 255.0};
+		double[] hsvThresholdValue = {20.0, 255.0};
 		hsvThreshold(hsvThresholdInput, hsvThresholdHue, hsvThresholdSaturation, hsvThresholdValue, hsvThresholdOutput);
 
 		// Step Find_Contours0:
@@ -53,15 +53,15 @@ public class VisionTargetPipeline implements VisionPipeline {
 
 		// Step Filter_Contours0:
 		ArrayList<MatOfPoint> filterContoursContours = findContoursOutput;
-		double filterContoursMinArea = 300.0;
-		double filterContoursMinPerimeter = 0.0;
-		double filterContoursMinWidth = 20.0;
-		double filterContoursMaxWidth = 5000.0;
-		double filterContoursMinHeight = 45.0;
-		double filterContoursMaxHeight = 1.0E8;
+		double filterContoursMinArea = 0.0;
+		double filterContoursMinPerimeter = 30.0;
+		double filterContoursMinWidth = 0.0;
+		double filterContoursMaxWidth = 1000.0;
+		double filterContoursMinHeight = 20.0;
+		double filterContoursMaxHeight = 1000.0;
 		double[] filterContoursSolidity = {0, 100};
-		double filterContoursMaxVertices = 1000.0;
-		double filterContoursMinVertices = 1.0;
+		double filterContoursMaxVertices = 1000000.0;
+		double filterContoursMinVertices = 15.0;
 		double filterContoursMinRatio = 0.0;
 		double filterContoursMaxRatio = 1000.0;
 		filterContours(filterContoursContours, filterContoursMinArea, filterContoursMinPerimeter, filterContoursMinWidth, filterContoursMaxWidth, filterContoursMinHeight, filterContoursMaxHeight, filterContoursSolidity, filterContoursMaxVertices, filterContoursMinVertices, filterContoursMinRatio, filterContoursMaxRatio, filterContoursOutput);
