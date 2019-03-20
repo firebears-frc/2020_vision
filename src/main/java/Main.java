@@ -243,7 +243,6 @@ public final class Main {
       UsbCamera camera = startCamera(cameraConfig);
       cameras.add(camera);
       if (visionTargetCamera == null) {
-        camera.setExposureManual(0);
         visionTargetCamera = camera;
         System.out.println("visionTargetCamera = " + cameraConfig.name);
       } else if (OrangeBallCamera == null) {
