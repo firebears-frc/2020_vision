@@ -56,7 +56,7 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
     private static final int fovy = 30;
 
     final int referenceDist = 36;
-    final int referenceWidth = 225;
+    final int referenceWidth = 64;
     final double referenceTargetWidth = 11.25;
 
     final double focalLength = referenceWidth * referenceDist / referenceTargetWidth;
