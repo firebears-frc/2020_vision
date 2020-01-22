@@ -1,0 +1,10 @@
+/bin/
+/build/
+/dist/
+/.gradle/
+*.class
+*.bak
+*.orig
+*.log
+*~
+.DS_Store
