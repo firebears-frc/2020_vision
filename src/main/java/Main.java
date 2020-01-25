@@ -23,6 +23,7 @@ import edu.wpi.cscore.MjpegServer;
 import edu.wpi.cscore.UsbCamera;
 import edu.wpi.cscore.VideoSource;
 import edu.wpi.first.cameraserver.CameraServer;
+import edu.wpi.first.networktables.EntryListenerFlags;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.vision.VisionPipeline;
 import edu.wpi.first.vision.VisionThread;
@@ -244,6 +245,7 @@ public final class Main {
   /**
    * Start running the switched camera.
    */
+  /*
   public static MjpegServer startSwitchedCamera(SwitchedCameraConfig config) {
     System.out.println("Starting switched camera '" + config.name + "' on " + config.key);
     MjpegServer server = CameraServer.getInstance().addSwitchedCamera(config.name);
@@ -267,7 +269,7 @@ public final class Main {
 
     return server;
   }
-
+*/
   /**
    * Example pipeline.
    */
