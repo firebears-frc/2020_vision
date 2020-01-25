@@ -1,4 +1,3 @@
-
 /*----------------------------------------------------------------------------*/
 /* Copyright (c) 2018 FIRST. All Rights Reserved.                             */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
@@ -87,7 +86,7 @@ public final class Main {
   public static List<CameraConfig> cameraConfigs = new ArrayList<>();
   public static List<SwitchedCameraConfig> switchedCameraConfigs = new ArrayList<>();
   public static List<VideoSource> cameras = new ArrayList<>();
-  
+
   private Main() {
   }
 
@@ -129,7 +128,7 @@ public final class Main {
     return true;
   }
 
- /**
+  /**
    * Read single switched camera configuration.
    */
   public static boolean readSwitchedCameraConfig(JsonObject config) {
@@ -209,6 +208,15 @@ public final class Main {
       }
     }
 
+    if (obj.has("switched cameras")) {
+      JsonArray switchedCameras = obj.get("switched cameras").getAsJsonArray();
+      for (JsonElement camera : switchedCameras) {
+        if (!readSwitchedCameraConfig(camera.getAsJsonObject())) {
+          return false;
+        }
+      }
+    }
+
     return true;
   }
 
@@ -231,6 +239,33 @@ public final class Main {
     }
 
     return camera;
+  }
+
+  /**
+   * Start running the switched camera.
+   */
+  public static MjpegServer startSwitchedCamera(SwitchedCameraConfig config) {
+    System.out.println("Starting switched camera '" + config.name + "' on " + config.key);
+    MjpegServer server = CameraServer.getInstance().addSwitchedCamera(config.name);
+
+    NetworkTableInstance.getDefault().getEntry(config.key).addListener(event -> {
+      if (event.value.isDouble()) {
+        int i = (int) event.value.getDouble();
+        if (i >= 0 && i < cameras.size()) {
+          server.setSource(cameras.get(i));
+        }
+      } else if (event.value.isString()) {
+        String str = event.value.getString();
+        for (int i = 0; i < cameraConfigs.size(); i++) {
+          if (str.equals(cameraConfigs.get(i).name)) {
+            server.setSource(cameras.get(i));
+            break;
+          }
+        }
+      }
+    }, EntryListenerFlags.kImmediate | EntryListenerFlags.kNew | EntryListenerFlags.kUpdate);
+
+    return server;
   }
 
   /**
