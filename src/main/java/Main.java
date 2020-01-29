@@ -256,25 +256,22 @@ public final class Main {
     System.out.println("Starting switched camera '" + config.name + "' on " + config.key);
     MjpegServer server = CameraServer.getInstance().addSwitchedCamera(config.name);
 
-    NetworkTableInstance.getDefault()
-        .getEntry(config.key)
-        .addListener(event -> {
-              if (event.value.isDouble()) {
-                int i = (int) event.value.getDouble();
-                if (i >= 0 && i < cameras.size()) {
-                  server.setSource(cameras.get(i));
-                }
-              } else if (event.value.isString()) {
-                String str = event.value.getString();
-                for (int i = 0; i < cameraConfigs.size(); i++) {
-                  if (str.equals(cameraConfigs.get(i).name)) {
-                    server.setSource(cameras.get(i));
-                    break;
-                  }
-                }
-              }
-            },
-            EntryListenerFlags.kImmediate | EntryListenerFlags.kNew | EntryListenerFlags.kUpdate);
+    NetworkTableInstance.getDefault().getEntry(config.key).addListener(event -> {
+      if (event.value.isDouble()) {
+        int i = (int) event.value.getDouble();
+        if (i >= 0 && i < cameras.size()) {
+          server.setSource(cameras.get(i));
+        }
+      } else if (event.value.isString()) {
+        String str = event.value.getString();
+        for (int i = 0; i < cameraConfigs.size(); i++) {
+          if (str.equals(cameraConfigs.get(i).name)) {
+            server.setSource(cameras.get(i));
+            break;
+          }
+        }
+      }
+    }, EntryListenerFlags.kImmediate | EntryListenerFlags.kNew | EntryListenerFlags.kUpdate);
 
     return server;
   }
@@ -326,17 +323,16 @@ public final class Main {
 
     // start image processing on camera 0 if present
     if (cameras.size() >= 1) {
-      VisionThread visionThread = new VisionThread(cameras.get(0),
-              new MyPipeline(), pipeline -> {
+      VisionThread TargetThread = new VisionThread(cameras.get(0), new MyPipeline(), pipeline -> {
         // do something with pipeline results
       });
-      /* something like this for GRIP:
-      VisionThread visionThread = new VisionThread(cameras.get(0),
-              new GripPipeline(), pipeline -> {
-        ...
-      });
-       */
-      visionThread.start();
+      /* something like this for GRIP: VisionThread visionThread = new VisionThread(cameras.get(0), new GripPipeline(), pipeline -> { ... }); */
+      TargetThread.start();
+    }
+
+    if (cameras.size() >= 2){
+      VisionThread visionTread = new VisionThread(cameras.get(0), new MyPipeline(), pipeline ->{
+      }
     }
 
     // loop forever
