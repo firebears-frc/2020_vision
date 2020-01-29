@@ -1,3 +1,4 @@
+
 /*----------------------------------------------------------------------------*/
 /* Copyright (c) 2018 FIRST. All Rights Reserved.                             */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
@@ -18,11 +19,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import edu.wpi.cscore.CvSource;
 import edu.wpi.cscore.MjpegServer;
 import edu.wpi.cscore.UsbCamera;
 import edu.wpi.cscore.VideoSource;
 import edu.wpi.first.cameraserver.CameraServer;
-import edu.wpi.first.networktables.EntryListenerFlags;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.vision.VisionPipeline;
 import edu.wpi.first.vision.VisionThread;
@@ -61,14 +62,6 @@ import org.opencv.core.Mat;
                }
            }
        ]
-       "switched cameras": [
-           {
-               "name": <virtual camera name>
-               "key": <network table key used for selection>
-               // if NT value is a string, it's treated as a name
-               // if NT value is a double, it's treated as an integer index
-           }
-       ]
    }
  */
 
@@ -83,17 +76,9 @@ public final class Main {
     public JsonElement streamConfig;
   }
 
-  @SuppressWarnings("MemberName")
-  public static class SwitchedCameraConfig {
-    public String name;
-    public String key;
-  };
-
   public static int team;
   public static boolean server;
   public static List<CameraConfig> cameraConfigs = new ArrayList<>();
-  public static List<SwitchedCameraConfig> switchedCameraConfigs = new ArrayList<>();
-  public static List<VideoSource> cameras = new ArrayList<>();
 
   private Main() {
   }
@@ -133,32 +118,6 @@ public final class Main {
     cam.config = config;
 
     cameraConfigs.add(cam);
-    return true;
-  }
-
-  /**
-   * Read single switched camera configuration.
-   */
-  public static boolean readSwitchedCameraConfig(JsonObject config) {
-    SwitchedCameraConfig cam = new SwitchedCameraConfig();
-
-    // name
-    JsonElement nameElement = config.get("name");
-    if (nameElement == null) {
-      parseError("could not read switched camera name");
-      return false;
-    }
-    cam.name = nameElement.getAsString();
-
-    // path
-    JsonElement keyElement = config.get("key");
-    if (keyElement == null) {
-      parseError("switched camera '" + cam.name + "': could not read key");
-      return false;
-    }
-    cam.key = keyElement.getAsString();
-
-    switchedCameraConfigs.add(cam);
     return true;
   }
 
@@ -216,22 +175,13 @@ public final class Main {
       }
     }
 
-    if (obj.has("switched cameras")) {
-      JsonArray switchedCameras = obj.get("switched cameras").getAsJsonArray();
-      for (JsonElement camera : switchedCameras) {
-        if (!readSwitchedCameraConfig(camera.getAsJsonObject())) {
-          return false;
-        }
-      }
-    }
-
     return true;
   }
 
   /**
    * Start running the camera.
    */
-  public static VideoSource startCamera(CameraConfig config) {
+  public static UsbCamera startCamera(CameraConfig config) {
     System.out.println("Starting camera '" + config.name + "' on " + config.path);
     CameraServer inst = CameraServer.getInstance();
     UsbCamera camera = new UsbCamera(config.name, config.path);
@@ -247,33 +197,6 @@ public final class Main {
     }
 
     return camera;
-  }
-
-  /**
-   * Start running the switched camera.
-   */
-  public static MjpegServer startSwitchedCamera(SwitchedCameraConfig config) {
-    System.out.println("Starting switched camera '" + config.name + "' on " + config.key);
-    MjpegServer server = CameraServer.getInstance().addSwitchedCamera(config.name);
-
-    NetworkTableInstance.getDefault().getEntry(config.key).addListener(event -> {
-      if (event.value.isDouble()) {
-        int i = (int) event.value.getDouble();
-        if (i >= 0 && i < cameras.size()) {
-          server.setSource(cameras.get(i));
-        }
-      } else if (event.value.isString()) {
-        String str = event.value.getString();
-        for (int i = 0; i < cameraConfigs.size(); i++) {
-          if (str.equals(cameraConfigs.get(i).name)) {
-            server.setSource(cameras.get(i));
-            break;
-          }
-        }
-      }
-    }, EntryListenerFlags.kImmediate | EntryListenerFlags.kNew | EntryListenerFlags.kUpdate);
-
-    return server;
   }
 
   /**
@@ -312,30 +235,46 @@ public final class Main {
     }
 
     // start cameras
-    for (CameraConfig config : cameraConfigs) {
-      cameras.add(startCamera(config));
+    List<VideoSource> cameras = new ArrayList<>();
+    VideoSource visionTargetCamera = null;
+    VideoSource OrangeBallCamera = null;
+
+    for (CameraConfig cameraConfig : cameraConfigs) {
+      UsbCamera camera = startCamera(cameraConfig);
+      cameras.add(camera);
+      if (visionTargetCamera == null) {
+        visionTargetCamera = camera;
+        System.out.println("visionTargetCamera = " + cameraConfig.name);
+      } else if (OrangeBallCamera == null) {
+        OrangeBallCamera = camera;
+        System.out.println("OrangeBallCamera = " + cameraConfig.name);
+      }
     }
 
-    // start switched cameras
-    for (SwitchedCameraConfig config : switchedCameraConfigs) {
-      startSwitchedCamera(config);
+    // start image processing on the cameras for vision targets, if present
+    CvSource visionTargetStream = CameraServer.getInstance().putVideo("visiontargetStream", 640, 360);
+
+    if (visionTargetCamera != null) {
+      VisionTargetPipeline visionTargetPipeline = new VisionTargetPipeline();
+      VisionTargetListener visionTargetListener = new VisionTargetListener(ntinst, visionTargetStream);
+      VisionThread visionTargetThread = new VisionThread(visionTargetCamera, visionTargetPipeline,
+          visionTargetListener);
+      visionTargetThread.start();
+      String cameraUrl = "http://frcvision.local:1181/?action=stream";
+      ntinst.getEntry("/CameraPublisher/VisionTarget/streams").setStringArray(new String[] { "mjpeg:" + cameraUrl });
+      System.out.println("Opening VisionTarget stream at: " + cameraUrl);
     }
 
-    // start image processing on camera 0 if present
-    if (cameras.size() >= 1) {
-      VisionThread TargetThread = new VisionThread(cameras.get(0), new MyPipeline(), pipeline -> {
-        // do something with pipeline results
-      });
-      /*
-       * something like this for GRIP: VisionThread visionThread = new
-       * VisionThread(cameras.get(0), new GripPipeline(), pipeline -> { ... });
-       */
-      TargetThread.start();
-    }
+    CvSource orangeBallStream = CameraServer.getInstance().putVideo("OrangeBallStream", 640, 360);
 
-    if (cameras.size() >= 2) {
-      VisionThread visionTread = new VisionThread(cameras.get(0), new MyPipeline(), pipeline -> {
-      });
+    if (OrangeBallCamera != null) {
+      OrangeBallPipeline orangeBallPipeline = new OrangeBallPipeline();
+      OrangeBallListener orangeBallListener = new OrangeBallListener(ntinst, orangeBallStream);
+      VisionThread orangeBallThread = new VisionThread(OrangeBallCamera, orangeBallPipeline, orangeBallListener);
+      orangeBallThread.start();
+      String cameraUrl = "http://frcvision.local:1182/?action=stream";
+      ntinst.getEntry("/CameraPublisher/OrangeBall/streams").setStringArray(new String[] { "mjpeg:" + cameraUrl });
+      System.out.println("Opening OrangeBall stream at: " + cameraUrl);
     }
 
     // loop forever
