@@ -18,6 +18,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import edu.wpi.cscore.CvSource;
 import edu.wpi.cscore.MjpegServer;
 import edu.wpi.cscore.UsbCamera;
 import edu.wpi.cscore.VideoSource;
@@ -321,21 +322,25 @@ public final class Main {
       startSwitchedCamera(config);
     }
 
-    // start image processing on camera 0 if present
-    if (cameras.size() >= 1) {
-      VisionThread TargetThread = new VisionThread(cameras.get(0), new MyPipeline(), pipeline -> {
-        // do something with pipeline results
-      });
-      /*
-       * something like this for GRIP: VisionThread visionThread = new
-       * VisionThread(cameras.get(0), new GripPipeline(), pipeline -> { ... });
-       */
-      TargetThread.start();
-    }
+    // start image processing on camera 0 if present\
+    /*
+     * if (cameras.size() >= 1) {
+     * 
+     * VisionThread cameraThread = new VisionThread(cameras.get(0), new
+     * MyPipeline(), pipeline -> { // do something with pipeline results });
+     * 
+     * something like this for GRIP: VisionThread visionThread = new
+     * VisionThread(cameras.get(0), new GripPipeline(), pipeline -> { ... });
+     * 
+     * cameraThread.start(); }
+     */
 
-    if (cameras.size() >= 2) {
-      VisionThread visionTread = new VisionThread(cameras.get(0), new MyPipeline(), pipeline -> {
-      });
+    CvSource visionStream = CameraServer.getInstance().putVideo("visionStream", 640, 360);
+    if (cameras.size() >= 1) {
+      VisionThread visionThread = new VisionThread(cameras.get(0), new VisionTargetPipeline(),
+          new VisionTargetListener(ntinst, visionStream));
+
+      visionThread.start();
     }
 
     // loop forever

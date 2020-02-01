@@ -103,13 +103,13 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
          * 
          * }
          */
-        int targetHolder = 0;
-        for (int i = 1; i < pipeline.convexHullsOutput().size(); i++) {
-            if (Imgproc.contourArea(pipeline.convexHullsOutput().get(i)) > Imgproc
-                    .contourArea(pipeline.convexHullsOutput().get(targetHolder))) {
-                targetHolder = i;
+        double targetwidth = 0;
+        for (int i = 0; i < pipeline.convexHullsOutput().size(); i++) {
+            if (Imgproc.contourArea(pipeline.convexHullsOutput().get(i)) > targetwidth) {
+                targetwidth = Imgproc.contourArea(pipeline.convexHullsOutput().get(i));
             }
         }
+
 
         // draws a blue rectangle arround paired targets
         /**
@@ -140,6 +140,7 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
          * if (pipeline.convexHullsOutput().size() > 0) { confidence = 1; } else {
          * confidence = 0; } }
          */
+
         long timeSpan = System.currentTimeMillis() - previousTime;
         previousTime = System.currentTimeMillis();
         networkTable.getEntry(TARGET_FPS).setNumber(Math.round(1000.0 / timeSpan));
@@ -148,7 +149,7 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
         networkTable.getEntry(TARGET_DISTANCE).setNumber(distance);
         networkTable.getEntry(TARGET_CONFIDENCE).setNumber(confidence);
         // networkTable.getEntry(TARGET_PAIRS).setNumber(targetPairs.size());
-        networkTable.getEntry(TARGET_WIDTH).setNumber(contourWidth(pipeline.convexHullsOutput().get(targetHolder)));
+        networkTable.getEntry(TARGET_WIDTH).setNumber(targetwidth);
         ntinst.flush();
         targetStream.putFrame(image);
 
@@ -196,13 +197,12 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
     }
 
     // Finds center of convex hull
-    public static Point centerOfConvexHull(MatOfPoint hull) {
-        Moments moment = Imgproc.moments(hull);
-        Point center = new Point();
-        center.x = (int) (moment.get_m10() / moment.get_m00());
-        center.y = (int) (moment.get_m01() / moment.get_m00());
-        return center;
-    }
+    /*
+     * public static Point centerOfConvexHull(MatOfPoint hull) { Moments moment =
+     * Imgproc.moments(hull); Point center = new Point(); center.x = (int)
+     * (moment.get_m10() / moment.get_m00()); center.y = (int) (moment.get_m01() /
+     * moment.get_m00()); return center; }
+     */
 
     // Finds width of convex hull
     public static double contourWidth(MatOfPoint hull) {
