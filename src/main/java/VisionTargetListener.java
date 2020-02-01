@@ -99,22 +99,20 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
          * Imgproc.drawContours(image, pipeline.convexHullsOutput(), i, new Scalar(0, 0,
          * 255), 3); leftTargets.add(pipeline.convexHullsOutput().get(i)); }else {
          * Imgproc.drawContours(image, pipeline.convexHullsOutput(), i, new Scalar(0,
-         * 255, 0), 3); rightTargets.add(pipeline.convexHullsOutput().get(i)); }
-         * 
-         * }
+         * 255, 0), 3); rightTargets.add(pipeline.convexHullsOutput().get(i)); } }
          */
         double targetwidth = 0;
+        MatOfPoint target = null;
         for (int i = 0; i < pipeline.convexHullsOutput().size(); i++) {
             if (Imgproc.contourArea(pipeline.convexHullsOutput().get(i)) > targetwidth) {
                 targetwidth = Imgproc.contourArea(pipeline.convexHullsOutput().get(i));
+                target = pipeline.convexHullsOutput().get(i);
             }
         }
 
-
         // draws a blue rectangle arround paired targets
         /**
-         * ArrayList<TargetPair> targetPairs = new ArrayList<TargetPair>(); for (int i =
-         * 0; i < leftTargets.size(); i++) { TargetPair pair = new
+        for (int i = 0; i < leftTargets.size(); i++) { TargetPair pair = new
          * TargetPair(leftTargets.get(i), rightTargets); if (pair.getHasPair()) {
          * targetPairs.add(pair); Imgproc.rectangle(image, pair.topLeft(),
          * pair.bottomRight(), new Scalar(255, 20, 10), -0); // Imgproc.circle(image,
@@ -129,17 +127,22 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
          * targetPairs.get(i); } }
          */
 
-        /**
-         * Imgproc.rectangle(image, bestPair.topLeft(), bestPair.bottomRight(), new
-         * Scalar(0, 255, 255), 2); // Sets angleX and angleY angleX =
-         * findAngle(bestPair.findCenter().x, image.cols(), fovx); angleY =
-         * findAngle(bestPair.findCenter().y, image.rows(), fovy); bestPairWidth =
-         * bestPair.pairSpread(); distance = referenceTargetWidth * focalLength /
-         * bestPairWidth;
-         * 
-         * if (pipeline.convexHullsOutput().size() > 0) { confidence = 1; } else {
-         * confidence = 0; } }
-         */
+        // findAngle(bestPair.findCenter().x, image.cols(), fovx);
+
+        if (target != null) {
+            angleX = findAngle(centerOfConvexHull(target).y, image.rows(), fovy);
+            angleY = findAngle(centerOfConvexHull(target).x, image.cols(), fovx);
+        }
+        // angleY = findAngle(bestPair.findCenter().y, image.rows(), fovy);
+        // bestPairWidth = bestPair.pairSpread();
+        // distance = referenceTargetWidth * focalLength / bestPairWidth;
+
+        // if (pipeline.convexHullsOutput().size() > 0) {
+        // confidence = 1;
+        // } else {
+        // confidence = 0;
+        // }
+        // }
 
         long timeSpan = System.currentTimeMillis() - previousTime;
         previousTime = System.currentTimeMillis();
@@ -197,12 +200,14 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
     }
 
     // Finds center of convex hull
-    /*
-     * public static Point centerOfConvexHull(MatOfPoint hull) { Moments moment =
-     * Imgproc.moments(hull); Point center = new Point(); center.x = (int)
-     * (moment.get_m10() / moment.get_m00()); center.y = (int) (moment.get_m01() /
-     * moment.get_m00()); return center; }
-     */
+
+    public static Point centerOfConvexHull(MatOfPoint hull) {
+        Moments moment = Imgproc.moments(hull);
+        Point center = new Point();
+        center.x = (int) (moment.get_m10() / moment.get_m00());
+        center.y = (int) (moment.get_m01() / moment.get_m00());
+        return center;
+    }
 
     // Finds width of convex hull
     public static double contourWidth(MatOfPoint hull) {
@@ -219,37 +224,4 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
         double out = (180 / Math.PI) * radians;
         return out;
     }
-
-    /**
-     * private class TargetPair { Point leftCenter; Point rightCenter; boolean
-     * hasPair = false;
-     * 
-     * // pairs right and left convex hulls TargetPair(MatOfPoint left,
-     * ArrayList<MatOfPoint> rightMats) { leftCenter = centerOfConvexHull(left);
-     * Point bestFit = new Point(99999, 0); for (int i = 0; i < rightMats.size();
-     * i++) { Point tmpRightCenter = centerOfConvexHull(rightMats.get(i)); if
-     * (tmpRightCenter.x > leftCenter.x && tmpRightCenter.x < bestFit.x) { bestFit =
-     * tmpRightCenter; hasPair = true; } } rightCenter = bestFit; }
-     * 
-     * public boolean getHasPair() { return hasPair; }
-     * 
-     * // finds the center point of a target pair public Point findCenter() { double
-     * averageX = (rightCenter.x + leftCenter.x) / 2; double averageY =
-     * (rightCenter.y + leftCenter.y) / 2; return new Point(averageX, averageY); }
-     * 
-     * public Point topLeft() { return new Point(leftCenter.x - 27, leftCenter.y -
-     * 37); }
-     * 
-     * public Point bottomRight() { return new Point(rightCenter.x + 27,
-     * rightCenter.y + 37); }
-     * 
-     * public double pairSpread() { return rightCenter.x - leftCenter.x; } }
-     */
-    /**
-     * enum Tilt { Left, Right; }
-     * 
-     * public static Tilt getHullTilt(MatOfPoint hull) { Mat line = new Mat();
-     * Imgproc.fitLine(hull, line, Imgproc.CV_DIST_L2, 0, 0.1, 0.1); if (line.get(1,
-     * 0)[0] < 0.0) { return Tilt.Left; } else { return Tilt.Right; } }\
-     */
 }
