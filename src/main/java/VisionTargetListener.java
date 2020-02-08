@@ -84,13 +84,15 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
         double distance = 0.0;
         double confidence = 0.0;
 
+        Point botomLeft = new Point(0,0);
+        Point topRight = new Point(160, 120);
         // ArrayLists for left and right targets
         // ArrayList<MatOfPoint> leftTargets = new ArrayList<MatOfPoint>();
         // ArrayList<MatOfPoint> rightTargets = new ArrayList<MatOfPoint>();
 
         // Mat image = pipeline.hsvThresholdOutput();
-        Mat image = new Mat(pipeline.hsvThresholdOutput().rows(), pipeline.hsvThresholdOutput().cols(), CvType.CV_8UC3);
-
+        Mat image = new Mat(pipeline.rgbThresholdOutput().rows(), pipeline.rgbThresholdOutput().cols(), CvType.CV_8UC3);
+        Imgproc.rectangle(image, botomLeft, topRight, new Scalar(0), -1);
         // draws contours in red and green, and adds convex hulls to left and right
         // ArrayLists
         /*
@@ -101,18 +103,18 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
          * Imgproc.drawContours(image, pipeline.convexHullsOutput(), i, new Scalar(0,
          * 255, 0), 3); rightTargets.add(pipeline.convexHullsOutput().get(i)); } }
          */
-        double targetwidth = 0;
+        double targetarea = 0;
         MatOfPoint target = null;
         for (int i = 0; i < pipeline.convexHullsOutput().size(); i++) {
-            if (Imgproc.contourArea(pipeline.convexHullsOutput().get(i)) > targetwidth) {
-                targetwidth = Imgproc.contourArea(pipeline.convexHullsOutput().get(i));
+            if (Imgproc.contourArea(pipeline.convexHullsOutput().get(i)) > targetarea) {
+                targetarea = Imgproc.contourArea(pipeline.convexHullsOutput().get(i));
                 target = pipeline.convexHullsOutput().get(i);
             }
         }
 
         // draws a blue rectangle arround paired targets
         /**
-        for (int i = 0; i < leftTargets.size(); i++) { TargetPair pair = new
+         * for (int i = 0; i < leftTargets.size(); i++) { TargetPair pair = new
          * TargetPair(leftTargets.get(i), rightTargets); if (pair.getHasPair()) {
          * targetPairs.add(pair); Imgproc.rectangle(image, pair.topLeft(),
          * pair.bottomRight(), new Scalar(255, 20, 10), -0); // Imgproc.circle(image,
@@ -128,10 +130,13 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
          */
 
         // findAngle(bestPair.findCenter().x, image.cols(), fovx);
-
+        double targetWidth = 0;
         if (target != null) {
             angleX = findAngle(centerOfConvexHull(target).y, image.rows(), fovy);
             angleY = findAngle(centerOfConvexHull(target).x, image.cols(), fovx);
+            confidence = 1;
+            Imgproc.putText(image, "target", centerOfConvexHull(target), 1, 1, new Scalar(0, 255));
+            targetWidth = contourWidth(target);
         }
         // angleY = findAngle(bestPair.findCenter().y, image.rows(), fovy);
         // bestPairWidth = bestPair.pairSpread();
@@ -152,7 +157,7 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
         networkTable.getEntry(TARGET_DISTANCE).setNumber(distance);
         networkTable.getEntry(TARGET_CONFIDENCE).setNumber(confidence);
         // networkTable.getEntry(TARGET_PAIRS).setNumber(targetPairs.size());
-        networkTable.getEntry(TARGET_WIDTH).setNumber(targetwidth);
+        networkTable.getEntry(TARGET_WIDTH).setNumber(targetWidth);
         ntinst.flush();
         targetStream.putFrame(image);
 
