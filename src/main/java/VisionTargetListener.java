@@ -32,22 +32,20 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
     /** Distanct to the target in inches. */
     public static final String TARGET_DISTANCE = "visionTarget.distance";
 
-    /** Confidence that we see a valid target, in the range 0.0 to 1.0. */
+    /** Confidence that we see a valid target. will be 0.0 or 1.0. */
     public static final String TARGET_CONFIDENCE = "visionTarget.confidence";
 
-    /** Number of vision target pairs */
-    // public static final String TARGET_PAIRS = "visionTarget.pairs";
+    public static final String IMAGE_WIDTH = "visionTarget.imageWidth";
+    public static final String IMAGE_HIGHT = "visionTarget.imageHight";
 
     /** Processing throughput in frames per second. */
     public static final String TARGET_FPS = "visionTarget.fps";
 
-    /**
-     * Milliseconds between saving image files. A negative value indicates to not
-     * save.
-     */
+    // Milliseconds between saving image files. A negative value indicates to not
+    // save.
     public static final String TARGET_SAVE = "visionTarget.saveImageTime";
 
-    /** Width of the best image pair, measured in pixels. */
+    /** Width of the best image pair. Measured in pixels. */
     public static final String TARGET_WIDTH = "visionTarget.width";
 
     private final NetworkTableInstance ntinst;
@@ -55,7 +53,7 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
     private final CvSource targetStream;
     private long previousTime;
 
-    // Camera FOV, change if switching cameras
+    // Camera FOV. Change if switching cameras
     private static final int fovx = 40;
     private static final int fovy = 30;
 
@@ -63,6 +61,8 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
     final int referenceWidth = 64;
     final double referenceTargetWidth = 11.25;
 
+    // math to find distance is depricated. the values are wrong and the system is
+    // not needed anymore
     final double focalLength = referenceWidth * referenceDist / referenceTargetWidth;
 
     final SimpleDateFormat imageDateFormat;
@@ -84,31 +84,22 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
         double distance = 0.0;
         double confidence = 0.0;
 
-        Point botomLeft = new Point(0,0);
-        Point topRight = new Point(160, 120);
-        // ArrayLists for left and right targets
-        // ArrayList<MatOfPoint> leftTargets = new ArrayList<MatOfPoint>();
-        // ArrayList<MatOfPoint> rightTargets = new ArrayList<MatOfPoint>();
+        
 
         // Mat image = pipeline.hsvThresholdOutput();
-        Mat image = new Mat(pipeline.rgbThresholdOutput().rows(), pipeline.rgbThresholdOutput().cols(), CvType.CV_8UC3);
+        Mat image = new Mat(pipeline.hsvThresholdOutput().rows(), pipeline.hsvThresholdOutput().cols(), CvType.CV_8UC3);
+        Point botomLeft = new Point(0, 0);
+        Point topRight = new Point(image.cols(), image.rows());
         Imgproc.rectangle(image, botomLeft, topRight, new Scalar(0), -1);
-        // draws contours in red and green, and adds convex hulls to left and right
-        // ArrayLists
-        /*
-         * for (int i = 0; i < pipeline.convexHullsOutput().size(); i++) { Tilt t =
-         * getHullTilt(pipeline.convexHullsOutput().get(i)); if (t == Tilt.Left) {
-         * Imgproc.drawContours(image, pipeline.convexHullsOutput(), i, new Scalar(0, 0,
-         * 255), 3); leftTargets.add(pipeline.convexHullsOutput().get(i)); }else {
-         * Imgproc.drawContours(image, pipeline.convexHullsOutput(), i, new Scalar(0,
-         * 255, 0), 3); rightTargets.add(pipeline.convexHullsOutput().get(i)); } }
-         */
+        
         double targetarea = 0;
+        int targetIndex = 0;
         MatOfPoint target = null;
         for (int i = 0; i < pipeline.convexHullsOutput().size(); i++) {
             if (Imgproc.contourArea(pipeline.convexHullsOutput().get(i)) > targetarea) {
                 targetarea = Imgproc.contourArea(pipeline.convexHullsOutput().get(i));
                 target = pipeline.convexHullsOutput().get(i);
+                targetIndex = i;
             }
         }
 
@@ -132,12 +123,18 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
         // findAngle(bestPair.findCenter().x, image.cols(), fovx);
         double targetWidth = 0;
         if (target != null) {
-            angleX = findAngle(centerOfConvexHull(target).y, image.rows(), fovy);
-            angleY = findAngle(centerOfConvexHull(target).x, image.cols(), fovx);
+            angleX = findAngle(centerOfConvexHull(target).x, image.rows(), fovy);
+            angleY = findAngle(centerOfConvexHull(target).y, image.cols(), fovx);
             confidence = 1;
             Imgproc.putText(image, "target", centerOfConvexHull(target), 1, 1, new Scalar(0, 255));
             targetWidth = contourWidth(target);
+            Imgproc.drawContours(image, pipeline.convexHullsOutput(), targetIndex, new Scalar(255), -1);
         }
+        // draws contours in red and green, and adds convex hulls to left and right
+        // ArrayLists
+        /*
+         *  }
+         */
         // angleY = findAngle(bestPair.findCenter().y, image.rows(), fovy);
         // bestPairWidth = bestPair.pairSpread();
         // distance = referenceTargetWidth * focalLength / bestPairWidth;
@@ -156,7 +153,9 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
         networkTable.getEntry(TARGET_ANGLE_Y).setNumber(angleY);
         networkTable.getEntry(TARGET_DISTANCE).setNumber(distance);
         networkTable.getEntry(TARGET_CONFIDENCE).setNumber(confidence);
-        // networkTable.getEntry(TARGET_PAIRS).setNumber(targetPairs.size());
+        networkTable.getEntry(IMAGE_WIDTH).setNumber(image.cols());
+        networkTable.getEntry(IMAGE_HIGHT).setNumber(image.rows());
+
         networkTable.getEntry(TARGET_WIDTH).setNumber(targetWidth);
         ntinst.flush();
         targetStream.putFrame(image);
