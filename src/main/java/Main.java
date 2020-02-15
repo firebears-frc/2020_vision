@@ -335,7 +335,7 @@ public final class Main {
      * cameraThread.start(); }
      */
 
-    CvSource visionStream = CameraServer.getInstance().putVideo("visionStream", 640, 360);
+    CvSource visionStream = CameraServer.getInstance().putVideo("visionStream", 320, 240);
     if (cameras.size() >= 1) {
       VisionThread visionThread = new VisionThread(cameras.get(0), new VisionTargetPipeline(),
           new VisionTargetListener(ntinst, visionStream));

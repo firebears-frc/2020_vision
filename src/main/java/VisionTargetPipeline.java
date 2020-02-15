@@ -26,6 +26,7 @@ import org.opencv.objdetect.*;
 public class VisionTargetPipeline implements VisionPipeline {
 
 	//Outputs
+	private Mat resizeImageOutput = new Mat();
 	private Mat hsvThresholdOutput = new Mat();
 	private ArrayList<MatOfPoint> findContoursOutput = new ArrayList<MatOfPoint>();
 	private ArrayList<MatOfPoint> filterContoursOutput = new ArrayList<MatOfPoint>();
@@ -39,11 +40,18 @@ public class VisionTargetPipeline implements VisionPipeline {
 	 * This is the primary method that runs the entire pipeline and updates the outputs.
 	 */
 	@Override	public void process(Mat source0) {
+		// Step Resize_Image0:
+		Mat resizeImageInput = source0;
+		double resizeImageWidth = 320.0;
+		double resizeImageHeight = 240.0;
+		int resizeImageInterpolation = Imgproc.INTER_NEAREST;
+		resizeImage(resizeImageInput, resizeImageWidth, resizeImageHeight, resizeImageInterpolation, resizeImageOutput);
+
 		// Step HSV_Threshold0:
-		Mat hsvThresholdInput = source0;
-		double[] hsvThresholdHue = {43.70503597122302, 110.88737201365187};
-		double[] hsvThresholdSaturation = {43.57014388489208, 174.49658703071674};
-		double[] hsvThresholdValue = {151.34892086330936, 255.0};
+		Mat hsvThresholdInput = resizeImageOutput;
+		double[] hsvThresholdHue = {0.0, 90.91328867879761};
+		double[] hsvThresholdSaturation = {0.0, 34.94492708656535};
+		double[] hsvThresholdValue = {255.0, 255.0};
 		hsvThreshold(hsvThresholdInput, hsvThresholdHue, hsvThresholdSaturation, hsvThresholdValue, hsvThresholdOutput);
 
 		// Step Find_Contours0:
@@ -53,23 +61,31 @@ public class VisionTargetPipeline implements VisionPipeline {
 
 		// Step Filter_Contours0:
 		ArrayList<MatOfPoint> filterContoursContours = findContoursOutput;
-		double filterContoursMinArea = 0.0;
-		double filterContoursMinPerimeter = 0.0;
-		double filterContoursMinWidth = 0.0;
-		double filterContoursMaxWidth = 1000.0;
-		double filterContoursMinHeight = 20.0;
-		double filterContoursMaxHeight = 225.0;
-		double[] filterContoursSolidity = {0.0, 60.750853242320815};
-		double filterContoursMaxVertices = 1000000.0;
-		double filterContoursMinVertices = 0.0;
-		double filterContoursMinRatio = 0.0;
-		double filterContoursMaxRatio = 1000.0;
+		double filterContoursMinArea = 50.0;
+		double filterContoursMinPerimeter = 30.0;
+		double filterContoursMinWidth = 30.0;
+		double filterContoursMaxWidth = 140.0;
+		double filterContoursMinHeight = 25.0;
+		double filterContoursMaxHeight = 1000.0;
+		double[] filterContoursSolidity = {0.0, 75.25597269624573};
+		double filterContoursMaxVertices = 1000000;
+		double filterContoursMinVertices = 0;
+		double filterContoursMinRatio = 0;
+		double filterContoursMaxRatio = 1000;
 		filterContours(filterContoursContours, filterContoursMinArea, filterContoursMinPerimeter, filterContoursMinWidth, filterContoursMaxWidth, filterContoursMinHeight, filterContoursMaxHeight, filterContoursSolidity, filterContoursMaxVertices, filterContoursMinVertices, filterContoursMinRatio, filterContoursMaxRatio, filterContoursOutput);
 
 		// Step Convex_Hulls0:
 		ArrayList<MatOfPoint> convexHullsContours = filterContoursOutput;
 		convexHulls(convexHullsContours, convexHullsOutput);
 
+	}
+
+	/**
+	 * This method is a generated getter for the output of a Resize_Image.
+	 * @return Mat output from Resize_Image.
+	 */
+	public Mat resizeImageOutput() {
+		return resizeImageOutput;
 	}
 
 	/**
@@ -104,6 +120,19 @@ public class VisionTargetPipeline implements VisionPipeline {
 		return convexHullsOutput;
 	}
 
+
+	/**
+	 * Scales and image to an exact size.
+	 * @param input The image on which to perform the Resize.
+	 * @param width The width of the output in pixels.
+	 * @param height The height of the output in pixels.
+	 * @param interpolation The type of interpolation.
+	 * @param output The image in which to store the output.
+	 */
+	private void resizeImage(Mat input, double width, double height,
+		int interpolation, Mat output) {
+		Imgproc.resize(input, output, new Size(width, height), 0.0, 0.0, interpolation);
+	}
 
 	/**
 	 * Segment an image based on hue, saturation, and value ranges.
