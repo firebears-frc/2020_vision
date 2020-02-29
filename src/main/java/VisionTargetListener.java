@@ -84,14 +84,12 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
         double distance = 0.0;
         double confidence = 0.0;
 
-        
-
         // Mat image = pipeline.hsvThresholdOutput();
         Mat image = new Mat(pipeline.hsvThresholdOutput().rows(), pipeline.hsvThresholdOutput().cols(), CvType.CV_8UC3);
         Point botomLeft = new Point(0, 0);
         Point topRight = new Point(image.cols(), image.rows());
         Imgproc.rectangle(image, botomLeft, topRight, new Scalar(0), -1);
-        
+
         double targetarea = 0;
         int targetIndex = 0;
         MatOfPoint target = null;
@@ -133,7 +131,7 @@ public class VisionTargetListener implements VisionRunner.Listener<VisionTargetP
         // draws contours in red and green, and adds convex hulls to left and right
         // ArrayLists
         /*
-         *  }
+         * }
          */
         // angleY = findAngle(bestPair.findCenter().y, image.rows(), fovy);
         // bestPairWidth = bestPair.pairSpread();
